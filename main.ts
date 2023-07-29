@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile, DropdownComponent } from 'obsidian';
+import { App, Modal, Plugin, PluginSettingTab, Setting, TFile, DropdownComponent } from 'obsidian';
 
 // Remember to rename these classes and interfaces!
 
@@ -21,7 +21,7 @@ export default class MyPlugin extends Plugin {
 			id: 'import-book-info',
 			name: 'Import Book Info',
 			checkCallback: (checking: boolean) => {
-				let activeFile = this.app.workspace.getActiveFile();
+				const activeFile = this.app.workspace.getActiveFile();
 				
 				if (activeFile && activeFile.path.startsWith('Book/')) {
 					if (!checking) {
@@ -55,7 +55,7 @@ export default class MyPlugin extends Plugin {
 					label: "" + b.title + " (" + b.author_name + " - " + b.first_publish_year + ")", 
 					id: b.key,
 					author:b.author_name,}));
-			let modal = new BookInfoModal(this.app, file, options);
+			const modal = new BookInfoModal(this.app, file, options);
 			modal.open();
 		})
     }
@@ -103,7 +103,7 @@ const processResults = async (wholeBook: Book) => {
     const results = await Promise.allSettled([getBook(bookId)]);
 
 	if (results[0].status === 'fulfilled') {
-        var bookData = results[0].value;
+        const bookData = results[0].value;
 		//more processing here in the future
 		bookData.author=wholeBook.author;
 		if (bookData.description) {
@@ -120,22 +120,22 @@ interface Metadata {
 }
 
 const addOrUpdateMetadata = (content: string, newMetadata: Metadata): string => {
-	let metadata = {};
+	const metadata = {};
 	let body = content;
 
 	// Check if the file already has YAML front matter
 	if (content.startsWith('---\n')) {
-		let endOfFrontMatter = content.indexOf('\n---', 4);
+		const endOfFrontMatter = content.indexOf('\n---', 4);
 		if (endOfFrontMatter !== -1) {
-			let frontMatter = content.substring(4, endOfFrontMatter);
+			const frontMatter = content.substring(4, endOfFrontMatter);
 			body = content.substring(endOfFrontMatter + 4);
 
 			// Parse the existing front matter
 			frontMatter.split('\n').forEach(line => {
-				let colonIndex = line.indexOf(':');
+				const colonIndex = line.indexOf(':');
 				if (colonIndex !== -1) {
-					let key = line.substring(0, colonIndex).trim();
-					let value = line.substring(colonIndex + 1).trim();
+					const key = line.substring(0, colonIndex).trim();
+					const value = line.substring(colonIndex + 1).trim();
 					metadata[key] = value;
 				}
 			});
@@ -143,7 +143,7 @@ const addOrUpdateMetadata = (content: string, newMetadata: Metadata): string => 
 	}
 
 	// Add the new metadata only if the key does not already exist
-	for (let key in newMetadata) {
+	for (const key in newMetadata) {
 		if (!metadata.hasOwnProperty(key)) {
 			metadata[key] = newMetadata[key];
 		}
@@ -151,7 +151,7 @@ const addOrUpdateMetadata = (content: string, newMetadata: Metadata): string => 
 
 	// Convert the metadata back to YAML front matter format
 	let frontMatter = '---\n';
-	for (let key in metadata) {
+	for (const key in metadata) {
 		frontMatter += `${key}: ${metadata[key]}\n`;
 	}
 	frontMatter += '---\n';
@@ -170,26 +170,26 @@ class BookInfoModal extends Modal {
     }
 
     onOpen() {
-        let {contentEl} = this;
+        const {contentEl} = this;
     
         // header
         contentEl.createEl('h2', { text: 'Open Book Library' });
     
         contentEl.createEl('p', { text: 'Which do you mean?' });
     
-        let dropdownDiv = contentEl.createDiv();
-        let dropdown = new DropdownComponent(dropdownDiv);
+        const dropdownDiv = contentEl.createDiv();
+        const dropdown = new DropdownComponent(dropdownDiv);
     
         // dropdown options
-        for (let book of this.options) {
+        for (const book of this.options) {
             dropdown.addOption(book.id, book.label);
         }
 	
 		// submit button
-		let buttonDiv = contentEl.createDiv({ attr: { style: 'text-align: right;' } });
-		let submitButton = buttonDiv.createEl('button', { text: 'Submit' });
+		const buttonDiv = contentEl.createDiv({ attr: { style: 'text-align: right;' } });
+		const submitButton = buttonDiv.createEl('button', { text: 'Submit' });
 		submitButton.onClickEvent(() => {
-			let selectedOption = dropdown.getValue();
+			const selectedOption = dropdown.getValue();
 			const selectedBook = this.options.find(book => book.id === selectedOption);
 			this.submit(selectedBook);
 			
@@ -201,10 +201,10 @@ class BookInfoModal extends Modal {
 		processResults(selectedOption)
 		.then(async (finalResults) => {
 			// Do something with finalResults
-			let activeFile = this.app.workspace.getActiveFile();
+			const activeFile = this.app.workspace.getActiveFile();
 			
-			let fileContent = await this.app.vault.read(activeFile);
-			let newContent = addOrUpdateMetadata(fileContent, finalResults);
+			const fileContent = await this.app.vault.read(activeFile);
+			const newContent = addOrUpdateMetadata(fileContent, finalResults);
 			await this.app.vault.modify(activeFile, newContent);
 		})
 		.catch(error => {
