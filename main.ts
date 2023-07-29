@@ -44,85 +44,40 @@ export default class MyPlugin extends Plugin {
 	onunload() {
 
 	}
+
 	async bookModal(file: TFile) {
-        let options = {
-            'option1': 'Option 1',
-            'option2': 'Option 2',
-            // ...
-        };
-        let modal = new BookInfoModal(this.app, file, options);
-        modal.open();
-    }
-	
-	async importBookInfo(file: TFile) {
 		const fname = this.app.workspace.getActiveFile()?.name.replace(".md","")
 		const url = "https://openlibrary.org/search.json?title=" + fname + "";
-		console.log(url)
-		let activeFile = this.app.workspace.getActiveFile();
-		if (activeFile) {
-			let fileContent = await this.app.vault.read(activeFile);
-			console.log(fileContent)
-			let newContent = this.addOrUpdateMetadata(fileContent);
-			console.log(newContent)
-			// await this.app.vault.modify(activeFile, newContent);
-		}
-	}
+		// console.log(url)
+
+		fetch(url).then(r => r.json()).then((books) => {
+			const options = books.docs
+				.map(b => ({ 
+					label: "" + b.title + " (" + b.author_name + " - " + b.first_publish_year + ")", 
+					id: b.key,
+					author:b.author_name,}));
+			console.log(books)
+			let modal = new BookInfoModal(this.app, file, options);
+			modal.open();
+		})
+        // let modal = new BookInfoModal(this.app, file, options);
+        // modal.open();
+    }
+	// async importBookInfo(file: TFile) {
+	// 	const fname = this.app.workspace.getActiveFile()?.name.replace(".md","")
+	// 	const url = "https://openlibrary.org/search.json?title=" + fname + "";
+	// 	console.log(url)
+	// 	let activeFile = this.app.workspace.getActiveFile();
+	// 	if (activeFile) {
+	// 		let fileContent = await this.app.vault.read(activeFile);
+	// 		console.log(fileContent)
+	// 		let newContent = this.addOrUpdateMetadata(fileContent);
+	// 		console.log(newContent)
+	// 		// await this.app.vault.modify(activeFile, newContent);
+	// 	}
+	// }
 	
-	addOrUpdateMetadata(content: string): string {
-		const results = [
-			{value:{
-				cover:"COVER_URL",
-				title:"Thinking Fast and Slow",
-				authors:"Daniel Kahneman",
-				firstYear:"YEAR_PUBLISHED",
-				pages:100
-			}},
-			{value:{
-				subjects:["BOOK_SUBJECT"],
-				description:"BOOK_SUMMARY"
-			}}
-		];
 	
-		let metadata = {};
-		let body = content;
-	
-		// Check if the file already has YAML front matter
-		if (content.startsWith('---\n')) {
-			let endOfFrontMatter = content.indexOf('\n---', 4);
-			if (endOfFrontMatter !== -1) {
-				let frontMatter = content.substring(4, endOfFrontMatter);
-				body = content.substring(endOfFrontMatter + 4);
-	
-				// Parse the existing front matter
-				frontMatter.split('\n').forEach(line => {
-					let colonIndex = line.indexOf(':');
-					if (colonIndex !== -1) {
-						let key = line.substring(0, colonIndex).trim();
-						let value = line.substring(colonIndex + 1).trim();
-						metadata[key] = value;
-					}
-				});
-			}
-		}
-	
-		// Add the new metadata only if the key does not already exist
-		for (let result of results) {
-			for (let key in result.value) {
-				if (!metadata.hasOwnProperty(key)) {
-					metadata[key] = result.value[key];
-				}
-			}
-		}
-	
-		// Convert the metadata back to YAML front matter format
-		let frontMatter = '---\n';
-		for (let key in metadata) {
-			frontMatter += `${key}: ${metadata[key]}\n`;
-		}
-		frontMatter += '---\n';
-	
-		return frontMatter + body;
-	}
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
@@ -133,46 +88,149 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
+
+interface Book {
+    id: string;
+    label: string;
+	author:string;
+}
+interface BookResults {
+	title?: string;
+	subtitle?: string;
+	subjects?: any;
+	description?: string;
+	author?:string;
+}
+
+const getBook = async (bookId: string): Promise<BookResults> => {
+	const worksUrl = `https://openlibrary.org${bookId}.json`;
+	const response = await fetch(worksUrl);
+	const book = await response.json();
+	let {subjects, title, subtitle, description} = book;
+
+	if (description && typeof description === 'object' && description.hasOwnProperty('value')) {
+		description = description.value;
+	}
+
+	const bookResults: BookResults = { title, subtitle, subjects, description };
+
+	return bookResults;
+}
+
+const processResults = async (wholeBook: Book) => {
+	const bookId =  wholeBook.id
+    const results = await Promise.allSettled([getBook(bookId)]);
+
+	if (results[0].status === 'fulfilled') {
+        var bookData = results[0].value;
+		//more processing here in the future
+		// console.log("whole book", wholeBook)
+		bookData.author=wholeBook.author;
+		return bookData;
+}}
+
+interface Metadata {
+	title?: string;
+	authors?: string;
+	subjects?: string[];
+	description?: string;
+}
+
+const addOrUpdateMetadata = (content: string, newMetadata: Metadata): string => {
+	let metadata = {};
+	let body = content;
+
+	// Check if the file already has YAML front matter
+	if (content.startsWith('---\n')) {
+		let endOfFrontMatter = content.indexOf('\n---', 4);
+		if (endOfFrontMatter !== -1) {
+			let frontMatter = content.substring(4, endOfFrontMatter);
+			body = content.substring(endOfFrontMatter + 4);
+
+			// Parse the existing front matter
+			frontMatter.split('\n').forEach(line => {
+				let colonIndex = line.indexOf(':');
+				if (colonIndex !== -1) {
+					let key = line.substring(0, colonIndex).trim();
+					let value = line.substring(colonIndex + 1).trim();
+					metadata[key] = value;
+				}
+			});
+		}
+	}
+
+	// Add the new metadata only if the key does not already exist
+	for (let key in newMetadata) {
+		if (!metadata.hasOwnProperty(key)) {
+			metadata[key] = newMetadata[key];
+		}
+	}
+
+	// Convert the metadata back to YAML front matter format
+	let frontMatter = '---\n';
+	for (let key in metadata) {
+		frontMatter += `${key}: ${metadata[key]}\n`;
+	}
+	frontMatter += '---\n';
+
+	return frontMatter + body;
+}
+
 class BookInfoModal extends Modal {
     file: TFile;
-    options: Record<string, string>;
+    options: Book[];
 
-    constructor(app, file, options) {
+    constructor(app:App, file:TFile, options:Book[]) {
         super(app);
         this.file = file;
         this.options = options;
     }
 
     onOpen() {
-		let {contentEl} = this;
+        let {contentEl} = this;
+    
+        // header
+        contentEl.createEl('h2', { text: 'Open Book Library' });
+    
+        contentEl.createEl('p', { text: 'Which do you mean?' });
+    
+        let dropdownDiv = contentEl.createDiv();
+        let dropdown = new DropdownComponent(dropdownDiv);
+    
+        // dropdown options
+        for (let book of this.options) {
+            dropdown.addOption(book.id, book.label);
+        }
 	
-		// Create a header
-		contentEl.createEl('h2', { text: 'Open Book Library' });
-	
-		// Create a label for the dropdown
-		contentEl.createEl('p', { text: 'Which do you mean?' });
-	
-		// Create a div for the dropdown
-		let dropdownDiv = contentEl.createDiv();
-		let dropdown = new DropdownComponent(dropdownDiv);
-	
-		// Add options to the dropdown
-		for (let value in this.options) {
-			dropdown.addOption(value, this.options[value]);
-		}
-	
-		// Create a div for the submit button
+		// submit button
 		let buttonDiv = contentEl.createDiv({ attr: { style: 'text-align: right;' } });
 		let submitButton = buttonDiv.createEl('button', { text: 'Submit' });
 		submitButton.onClickEvent(() => {
 			let selectedOption = dropdown.getValue();
-			this.submit(selectedOption);
+			console.log(this.options)
+			const selectedBook = this.options.find(book => book.id === selectedOption);
+			this.submit(selectedBook);
+			
 		});
 	}
 
-    submit(selectedOption) {
-        // Here you can run more functions with the selected item as an input
+    submit(selectedOption:Book) {
         console.log('Selected option:', selectedOption);
+		// you've got the book selected now find all the info about that book
+		processResults(selectedOption)
+		.then(finalResults => {
+			// Do something with finalResults
+			console.log("final",finalResults);
+			// 		let fileContent = await this.app.vault.read(activeFile);
+			// console.log(fileContent)
+			// let newContent = this.addOrUpdateMetadata(fileContent);
+			// console.log(newContent)
+			// await this.app.vault.modify(activeFile, newContent);
+		})
+		.catch(error => {
+			console.error(error);
+		});
+
         this.close();
     }
 }
