@@ -5,7 +5,7 @@
 	"minAppVersion": "0.15.0",
 	"description": "Adds a slash command to import book metadata for the current open file from the Open Library Database.",
 	"author": "Matt Vogel",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"authorUrl": "https://twitter.com/todayIwasbetter",
+	"fundingUrl": "https://paypal.me/mertv21",
 	"isDesktopOnly": false
 }

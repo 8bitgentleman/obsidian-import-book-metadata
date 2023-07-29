@@ -1,7 +1,7 @@
 {
-	"name": "cool-plugin-test",
+	"name": "import-book-metadata",
 	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "Adds a slash command to import book metadata for the current open file from the Open Library Database. If a file exists in the folder 'Book' then a slash command is available to import book information.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",

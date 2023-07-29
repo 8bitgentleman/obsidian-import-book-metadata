@@ -124,8 +124,10 @@ const processResults = async (wholeBook: Book) => {
 	if (results[0].status === 'fulfilled') {
         var bookData = results[0].value;
 		//more processing here in the future
-		// console.log("whole book", wholeBook)
 		bookData.author=wholeBook.author;
+		if (bookData.description) {
+			bookData.description=bookData.description.replace(/\n/g, ' ')
+		}
 		return bookData;
 }}
 
@@ -214,18 +216,19 @@ class BookInfoModal extends Modal {
 		});
 	}
 
-    submit(selectedOption:Book) {
+    async submit(selectedOption:Book) {
         console.log('Selected option:', selectedOption);
 		// you've got the book selected now find all the info about that book
 		processResults(selectedOption)
-		.then(finalResults => {
+		.then(async (finalResults) => {
 			// Do something with finalResults
-			console.log("final",finalResults);
-			// 		let fileContent = await this.app.vault.read(activeFile);
-			// console.log(fileContent)
-			// let newContent = this.addOrUpdateMetadata(fileContent);
+			let activeFile = this.app.workspace.getActiveFile();
+			
+			let fileContent = await this.app.vault.read(activeFile);
+			console.log(fileContent)
+			let newContent = addOrUpdateMetadata(fileContent, finalResults);
 			// console.log(newContent)
-			// await this.app.vault.modify(activeFile, newContent);
+			await this.app.vault.modify(activeFile, newContent);
 		})
 		.catch(error => {
 			console.error(error);
