@@ -12,6 +12,7 @@ This is a small plugin to find and import book metadata from the Open Library Da
 
 ## Example
 
+https://github.com/8bitgentleman/obsidian-import-book-metadata/assets/4028391/eeaf9b2f-d213-4222-b824-4cace2670e8f
 
-https://github.com/8bitgentleman/obsidian-plugin/assets/4028391/c45e7bd8-83e5-4887-91ba-32709c6b58b7
+
 
