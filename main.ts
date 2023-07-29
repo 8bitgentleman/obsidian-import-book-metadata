@@ -48,7 +48,6 @@ export default class MyPlugin extends Plugin {
 	async bookModal(file: TFile) {
 		const fname = this.app.workspace.getActiveFile()?.name.replace(".md","")
 		const url = "https://openlibrary.org/search.json?title=" + fname + "";
-		// console.log(url)
 
 		fetch(url).then(r => r.json()).then((books) => {
 			const options = books.docs
@@ -56,27 +55,10 @@ export default class MyPlugin extends Plugin {
 					label: "" + b.title + " (" + b.author_name + " - " + b.first_publish_year + ")", 
 					id: b.key,
 					author:b.author_name,}));
-			console.log(books)
 			let modal = new BookInfoModal(this.app, file, options);
 			modal.open();
 		})
-        // let modal = new BookInfoModal(this.app, file, options);
-        // modal.open();
     }
-	// async importBookInfo(file: TFile) {
-	// 	const fname = this.app.workspace.getActiveFile()?.name.replace(".md","")
-	// 	const url = "https://openlibrary.org/search.json?title=" + fname + "";
-	// 	console.log(url)
-	// 	let activeFile = this.app.workspace.getActiveFile();
-	// 	if (activeFile) {
-	// 		let fileContent = await this.app.vault.read(activeFile);
-	// 		console.log(fileContent)
-	// 		let newContent = this.addOrUpdateMetadata(fileContent);
-	// 		console.log(newContent)
-	// 		// await this.app.vault.modify(activeFile, newContent);
-	// 	}
-	// }
-	
 	
 
 	async loadSettings() {
@@ -87,7 +69,6 @@ export default class MyPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 }
-
 
 interface Book {
     id: string;
@@ -209,7 +190,6 @@ class BookInfoModal extends Modal {
 		let submitButton = buttonDiv.createEl('button', { text: 'Submit' });
 		submitButton.onClickEvent(() => {
 			let selectedOption = dropdown.getValue();
-			console.log(this.options)
 			const selectedBook = this.options.find(book => book.id === selectedOption);
 			this.submit(selectedBook);
 			
@@ -217,7 +197,6 @@ class BookInfoModal extends Modal {
 	}
 
     async submit(selectedOption:Book) {
-        console.log('Selected option:', selectedOption);
 		// you've got the book selected now find all the info about that book
 		processResults(selectedOption)
 		.then(async (finalResults) => {
@@ -225,9 +204,7 @@ class BookInfoModal extends Modal {
 			let activeFile = this.app.workspace.getActiveFile();
 			
 			let fileContent = await this.app.vault.read(activeFile);
-			console.log(fileContent)
 			let newContent = addOrUpdateMetadata(fileContent, finalResults);
-			// console.log(newContent)
 			await this.app.vault.modify(activeFile, newContent);
 		})
 		.catch(error => {
