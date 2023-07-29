@@ -20,3 +20,7 @@ This sample plugin demonstrates some of the basic functionality the plugin API c
 - Watch as metadata for the book is added to your file
 
 ## Example
+
+
+https://github.com/8bitgentleman/obsidian-plugin/assets/4028391/c45e7bd8-83e5-4887-91ba-32709c6b58b7
+
